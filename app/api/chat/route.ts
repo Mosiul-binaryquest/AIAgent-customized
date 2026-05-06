@@ -30,6 +30,10 @@ Key Strengths:
 - Flexible engagement models for projects of all sizes
 - Focus on efficiency, sustainable growth, and ROI for clients
 
+Contact & Location:
+- Website: https://www.binaryquest.com
+- Based in Bangladesh
+
 Target Clients:
 - Small to mid-sized businesses (SMBs)
 - Companies looking for offshore development partnerships
@@ -40,7 +44,7 @@ Instructions:
 - Answer all questions about BinaryQuest accurately and helpfully
 - Be professional, friendly, and concise
 - If someone asks about pricing or specific availability, invite them to contact BinaryQuest directly at https://www.binaryquest.com
-- Do not make up information you are not sure about — say you'll connect them with the team instead
+- Do not make up information you are not sure about — say you will connect them with the team instead
 - Always represent BinaryQuest in a positive, professional light
 - If asked something completely unrelated to BinaryQuest or its services, politely redirect the conversation`;
 
@@ -52,22 +56,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
-    const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
-      role: m.role === "user" ? "user" : "model",
-      parts: [{ text: m.content }],
-    }));
+    const history = messages.slice(0, -1)
+      .filter((m: { role: string; content: string }) => m.content?.trim())
+      .map((m: { role: string; content: string }) => ({
+        role: m.role === "user" ? "user" : "model",
+        parts: [{ text: m.content }],
+      }));
 
     const chat = model.startChat({
       history,
-      systemInstruction: SYSTEM_PROMPT,
+      systemInstruction: { role: "system", parts: [{ text: SYSTEM_PROMPT }] },
     });
-
-    const lastMessage = messages[messages.length - 1].content;
-    const result = await chat.sendMessage(lastMessage);
+    const result = await chat.sendMessage(messages[messages.length - 1].content);
     const reply = result.response.text();
-
     return NextResponse.json({ reply });
   } catch (err) {
     console.error("Chat error:", err);
